@@ -46,8 +46,8 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
 			</div>
 
 			<div className="glass-card p-4 rounded-xl flex items-center gap-4 flex-wrap">
-				<div className="flex-1 min-w-[300px]">
-					<label className="block text-xs font-medium text-secondary mb-1.5 uppercase tracking-wider">Target Directory</label>
+				<div className="flex-1 min-w-300">
+					<label className="block text-xs font-medium text-secondary mb-1-5 uppercase tracking-wider">Target Directory</label>
 					<div className="flex items-center gap-2 bg-secondary/50 p-1.5 rounded-lg border border-color hover:border-accent/50 transition-colors" style={{ background: 'rgba(15, 23, 42, 0.3)' }}>
 						<div className="p-2 bg-blue-500/10 rounded-md text-accent">
 							<FolderOpen size={18} />
@@ -66,42 +66,50 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
 					</div>
 				</div>
 
-				<div className="min-w-[200px]">
-					<label className="block text-xs font-medium text-secondary mb-1.5 uppercase tracking-wider">Time Range</label>
-					<div className="relative">
+				<div className="min-w-200">
+					<label className="block text-xs font-medium text-secondary mb-1-5 uppercase tracking-wider">Time Range</label>
+					<div className="flex items-center gap-2 p-1.5 rounded-lg border border-color" style={{ background: 'rgba(15, 23, 42, 0.3)' }}>
+						<div className="p-2 bg-blue-500/10 rounded-md text-accent">
+							<Calendar size={18} />
+						</div>
 						<select
 							value={timeFrame}
 							onChange={(e) => onTimeFrameChange(e.target.value as TimeFrame)}
-							className="w-full appearance-none pl-10 pr-8"
-							style={{ backgroundImage: 'none' }}
+							className="flex-1 appearance-none bg-transparent border-none text-sm"
+							style={{ backgroundImage: 'none', border: 'none', boxShadow: 'none', padding: '0.25rem 1.5rem 0.25rem 0' }}
 						>
 							<option value="8h">Last 8 Hours</option>
 							<option value="24h">Last 24 Hours</option>
 							<option value="48h">Last 48 Hours</option>
 							<option value="1w">Last Week</option>
+							<option value="yesterday">Yesterday (9am-7pm)</option>
 							<option value="custom">Custom Range</option>
 						</select>
-						<Calendar size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary pointer-events-none" />
-						<ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-secondary pointer-events-none" />
+						<ChevronDown size={14} className="text-secondary pointer-events-none" />
 					</div>
 				</div>
 
 				{timeFrame === 'custom' && (
-					<div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-4 pt-6">
-						<input
-							type="date"
-							value={customSince}
-							onChange={(e) => onCustomSinceChange(e.target.value)}
-							className="w-36"
-						/>
-						<span className="text-secondary text-sm">to</span>
-						<input
-							type="date"
-							value={customUntil}
-							onChange={(e) => onCustomUntilChange(e.target.value)}
-							className="w-36"
-						/>
-					</div>
+					<>
+						<div className="min-w-200 animate-in">
+							<label className="block text-xs font-medium text-secondary mb-1-5 uppercase tracking-wider">From</label>
+							<input
+								type="datetime-local"
+								value={customSince}
+								onChange={(e) => onCustomSinceChange(e.target.value)}
+								style={{ width: '100%' }}
+							/>
+						</div>
+						<div className="min-w-200 animate-in">
+							<label className="block text-xs font-medium text-secondary mb-1-5 uppercase tracking-wider">To</label>
+							<input
+								type="datetime-local"
+								value={customUntil}
+								onChange={(e) => onCustomUntilChange(e.target.value)}
+								style={{ width: '100%' }}
+							/>
+						</div>
+					</>
 				)}
 			</div>
 		</div>

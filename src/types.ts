@@ -13,4 +13,4 @@ export interface ScanOptions {
 	until?: string;
 }
 
-export type TimeFrame = '8h' | '24h' | '48h' | '1w' | 'custom';
+export type TimeFrame = '8h' | '24h' | '48h' | '1w' | 'yesterday' | 'custom';

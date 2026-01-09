@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Commit } from '../types';
-import { GitCommit, GitBranch, Clock, FolderGit } from 'lucide-react';
+import { GitCommit, GitBranch, Clock, FolderGit, User, Hash } from 'lucide-react';
 
 interface RepoListProps {
 	commits: Commit[];
@@ -23,7 +23,7 @@ export const RepoList: React.FC<RepoListProps> = ({ commits }) => {
 	if (commits.length === 0) {
 		return (
 			<div className="flex-1 flex flex-col items-center justify-center text-secondary gap-6 opacity-60">
-				<div className="w-24 h-24 rounded-full bg-secondary/10 flex items-center justify-center">
+				<div style={{ width: '6rem', height: '6rem', borderRadius: '9999px', background: 'rgba(148, 163, 184, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
 					<FolderGit size={48} />
 				</div>
 				<div className="text-center">
@@ -36,51 +36,112 @@ export const RepoList: React.FC<RepoListProps> = ({ commits }) => {
 
 	return (
 		<div className="flex-1 overflow-auto px-6 pb-6">
-			<div className="repo-grid">
+			{/* Column layout for repositories */}
+			<div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 				{repoNames.map((repoName, index) => (
 					<div
 						key={repoName}
-						className="glass-card rounded-xl overflow-hidden animate-in h-fit"
+						className="glass-card rounded-xl overflow-hidden animate-in"
 						style={{ animationDelay: `${index * 50}ms` }}
 					>
-						<div className="bg-white/5 p-4 border-b border-color flex justify-between items-center backdrop-blur-sm">
-							<div className="flex items-center gap-3">
-								<div className="p-2 bg-blue-500/20 rounded-lg text-blue-400">
-									<FolderGit size={18} />
+						{/* Repository Header */}
+						<div style={{
+							background: 'rgba(255, 255, 255, 0.03)',
+							padding: '1rem 1.25rem',
+							borderBottom: '1px solid rgba(148, 163, 184, 0.1)',
+							display: 'flex',
+							justifyContent: 'space-between',
+							alignItems: 'center'
+						}}>
+							<div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+								<div style={{ padding: '0.5rem', background: 'rgba(59, 130, 246, 0.15)', borderRadius: '0.5rem', color: '#60a5fa' }}>
+									<FolderGit size={20} />
 								</div>
 								<div>
-									<h3 className="font-bold text-base m-0 text-primary truncate max-w-[150px]">{repoName}</h3>
-									<span className="text-xs text-secondary flex items-center gap-1 mt-0.5">
-										<span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-										{groupedCommits[repoName].length} commits
+									<h3 style={{ fontWeight: 700, fontSize: '1rem', margin: 0, color: '#f8fafc' }}>{repoName}</h3>
+									<span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '0.375rem', marginTop: '0.125rem' }}>
+										<span style={{ width: '0.5rem', height: '0.5rem', borderRadius: '9999px', background: '#10b981' }}></span>
+										{groupedCommits[repoName].length} commit{groupedCommits[repoName].length !== 1 ? 's' : ''}
 									</span>
 								</div>
 							</div>
-							<span className="text-xs font-mono text-secondary bg-black-20 px-2 py-1 rounded border border-white/5 truncate max-w-[100px]">
+							<div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: '#94a3b8', background: 'rgba(0, 0, 0, 0.2)', padding: '0.375rem 0.75rem', borderRadius: '0.375rem', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+								<User size={12} />
 								{groupedCommits[repoName][0].author}
-							</span>
+							</div>
 						</div>
 
-						<div className="divide-y divide-white/5 max-h-[300px] overflow-y-auto custom-scrollbar">
-							{groupedCommits[repoName].map(commit => (
-								<div key={commit.hash} className="p-4 hover:bg-white/5 transition-colors group flex gap-4 items-start">
-									<div className="font-mono text-xs text-blue-400/80 pt-1 flex items-center gap-1.5 min-w-[85px] group-hover:text-blue-400 transition-colors">
-										<GitCommit size={14} />
-										{commit.hash}
+						{/* Commits List */}
+						<div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+							{groupedCommits[repoName].map((commit, commitIndex) => (
+								<div
+									key={commit.hash}
+									style={{
+										padding: '1rem 1.25rem',
+										borderTop: commitIndex > 0 ? '1px solid rgba(255, 255, 255, 0.03)' : 'none',
+										display: 'flex',
+										gap: '1rem',
+										alignItems: 'flex-start',
+										transition: 'background 0.15s ease'
+									}}
+									onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.02)'}
+									onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+								>
+									{/* Commit Hash with Icon */}
+									<div style={{
+										display: 'flex',
+										alignItems: 'center',
+										gap: '0.375rem',
+										fontFamily: 'monospace',
+										fontSize: '0.75rem',
+										color: '#60a5fa',
+										minWidth: '90px',
+										paddingTop: '0.125rem'
+									}}>
+										<Hash size={12} style={{ opacity: 0.7 }} />
+										<span>{commit.hash}</span>
 									</div>
 
-									<div className="flex-1 min-w-0">
-										<div className="font-medium text-sm text-primary/90 group-hover:text-white transition-colors leading-snug break-words">
+									{/* Commit Details */}
+									<div style={{ flex: 1, minWidth: 0 }}>
+										{/* Commit Message */}
+										<div style={{
+											fontWeight: 500,
+											fontSize: '0.875rem',
+											color: '#e2e8f0',
+											lineHeight: 1.5,
+											wordBreak: 'break-word'
+										}}>
 											{commit.message}
 										</div>
 
-										<div className="flex items-center gap-4 mt-2 text-xs text-secondary">
-											<span className="flex items-center gap-1.5" title={commit.date}>
-												<Clock size={12} />
+										{/* Metadata Row */}
+										<div style={{
+											display: 'flex',
+											alignItems: 'center',
+											gap: '1rem',
+											marginTop: '0.5rem',
+											fontSize: '0.75rem',
+											color: '#94a3b8'
+										}}>
+											{/* Date */}
+											<span style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+												<Clock size={12} style={{ color: '#64748b' }} />
 												{commit.date}
 											</span>
+
+											{/* Branch/Refs */}
 											{commit.refs && (
-												<span className="flex items-center gap-1.5 text-amber-500/90 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20 truncate max-w-[150px]">
+												<span style={{
+													display: 'flex',
+													alignItems: 'center',
+													gap: '0.375rem',
+													color: '#fbbf24',
+													background: 'rgba(251, 191, 36, 0.1)',
+													padding: '0.125rem 0.5rem',
+													borderRadius: '9999px',
+													border: '1px solid rgba(251, 191, 36, 0.2)'
+												}}>
 													<GitBranch size={10} />
 													{commit.refs}
 												</span>

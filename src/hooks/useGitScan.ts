@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Commit, ScanOptions, TimeFrame } from '../types';
-import { format } from 'date-fns';
+import { format, subDays, setHours, setMinutes } from 'date-fns';
 
 export function useGitScan() {
 	const [rootPath, setRootPath] = useState('');
 	const [timeFrame, setTimeFrame] = useState<TimeFrame>('24h');
-	const [customSince, setCustomSince] = useState(format(new Date(), 'yyyy-MM-dd'));
-	const [customUntil, setCustomUntil] = useState(format(new Date(), 'yyyy-MM-dd'));
+	const [customSince, setCustomSince] = useState(format(new Date(), 'yyyy-MM-dd\'T\'09:00'));
+	const [customUntil, setCustomUntil] = useState(format(new Date(), 'yyyy-MM-dd\'T\'19:00'));
 	const [commits, setCommits] = useState<Commit[]>([]);
 	const [isScanning, setIsScanning] = useState(false);
 
@@ -46,6 +46,10 @@ export function useGitScan() {
 		if (timeFrame === 'custom') {
 			since = customSince;
 			until = customUntil;
+		} else if (timeFrame === 'yesterday') {
+			const yesterday = subDays(new Date(), 1);
+			since = format(setHours(setMinutes(yesterday, 0), 9), 'yyyy-MM-dd HH:mm:ss');
+			until = format(setHours(setMinutes(yesterday, 0), 19), 'yyyy-MM-dd HH:mm:ss');
 		} else {
 			switch (timeFrame) {
 				case '8h': since = '8 hours ago'; break;
@@ -58,7 +62,7 @@ export function useGitScan() {
 		const options: ScanOptions = {
 			rootPath,
 			since,
-			until: timeFrame === 'custom' ? until : undefined
+			until: (timeFrame === 'custom' || timeFrame === 'yesterday') ? until : undefined
 		};
 
 		try {

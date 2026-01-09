@@ -133,7 +133,7 @@ body {
 	pointer-events: none;
 }
 
-/* CENTERING CONTAINER - This is the key class for centering content */
+/* CENTERING CONTAINER */
 .container-centered {
 	width: 100%;
 	max-width: 1280px;
@@ -142,7 +142,7 @@ body {
 	padding: 1.5rem;
 }
 
-/* RESPONSIVE GRID for repository cards */
+/* RESPONSIVE GRID */
 .repo-grid {
 	display: grid;
 	grid-template-columns: 1fr;
@@ -355,6 +355,14 @@ select:focus {
 	padding-bottom: 1.5rem;
 }
 
+.mb-1 {
+	margin-bottom: 0.25rem;
+}
+
+.mb-1-5 {
+	margin-bottom: 0.375rem;
+}
+
 .mb-2 {
 	margin-bottom: 0.5rem;
 }
@@ -408,6 +416,14 @@ select:focus {
 	text-transform: capitalize;
 }
 
+.uppercase {
+	text-transform: uppercase;
+}
+
+.tracking-wider {
+	letter-spacing: 0.05em;
+}
+
 .opacity-60 {
 	opacity: 0.6;
 }
@@ -438,6 +454,18 @@ select:focus {
 
 .h-fit {
 	height: fit-content;
+}
+
+.block {
+	display: block;
+}
+
+.min-w-200 {
+	min-width: 200px;
+}
+
+.min-w-300 {
+	min-width: 300px;
 }
 
 .truncate {
