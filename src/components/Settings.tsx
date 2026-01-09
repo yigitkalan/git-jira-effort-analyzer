@@ -19,6 +19,7 @@ export const SettingsView: React.FC = () => {
   const [breakTimes, setBreakTimes] = useState<BreakTime[]>([{ start: '12:00', end: '13:00' }]);
   const [workStartTime, setWorkStartTime] = useState('09:00');
   const [workEndTime, setWorkEndTime] = useState('19:00');
+  const [marginMinutes, setMarginMinutes] = useState(60);
 
   // Load settings on mount
   useEffect(() => {
@@ -58,6 +59,9 @@ export const SettingsView: React.FC = () => {
 
       const savedWorkEnd = await (window as any).ipcRenderer.invoke('get-settings', 'workEndTime');
       if (savedWorkEnd) setWorkEndTime(savedWorkEnd);
+
+      const savedMargin = await (window as any).ipcRenderer.invoke('get-settings', 'marginMinutes');
+      if (savedMargin !== undefined) setMarginMinutes(savedMargin);
     };
     loadSettings();
   }, []);
@@ -96,6 +100,11 @@ export const SettingsView: React.FC = () => {
   const saveWorkEndTime = (value: string) => {
     setWorkEndTime(value);
     (window as any).ipcRenderer.invoke('save-settings', 'workEndTime', value);
+  };
+
+  const saveMarginMinutes = (value: number) => {
+    setMarginMinutes(value);
+    (window as any).ipcRenderer.invoke('save-settings', 'marginMinutes', value);
   };
 
   const addBreakTime = () => {
@@ -224,6 +233,7 @@ export const SettingsView: React.FC = () => {
         </div>
       </div>
 
+
       {/* Work Hours Section */}
       <div className="glass-card p-6 rounded-xl flex flex-col gap-4">
         <label className="block text-xs font-medium text-secondary uppercase tracking-wider">
@@ -251,6 +261,19 @@ export const SettingsView: React.FC = () => {
               style={{ width: '120px' }}
             />
           </div>
+        </div>
+        <div>
+          <label className="block text-xs text-secondary mb-1">Margin (minutes)</label>
+          <input
+            type="number"
+            value={marginMinutes}
+            onChange={(e) => saveMarginMinutes(parseInt(e.target.value) || 0)}
+            placeholder="60"
+            style={{ width: '120px' }}
+          />
+          <p className="text-xs text-muted mt-1">
+            Time to deduct from available work hours (buffer)
+          </p>
         </div>
       </div>
 

@@ -59,6 +59,7 @@ export const EffortSubmissionModal: React.FC<EffortSubmissionModalProps> = ({
   const [breakTimes, setBreakTimes] = useState<BreakTime[]>([{ start: '12:00', end: '13:00' }]);
   const [autoFillEnabled, setAutoFillEnabled] = useState(false);
   const [isLoadingEffortTimes, setIsLoadingEffortTimes] = useState(false);
+  const [marginMinutes, setMarginMinutes] = useState(60);
 
   // Load settings
   useEffect(() => {
@@ -71,6 +72,9 @@ export const EffortSubmissionModal: React.FC<EffortSubmissionModalProps> = ({
 
       const savedWorkEnd = await (window as any).ipcRenderer.invoke('get-settings', 'workEndTime');
       if (savedWorkEnd) setWorkEndTime(savedWorkEnd);
+
+      const savedMargin = await (window as any).ipcRenderer.invoke('get-settings', 'marginMinutes');
+      if (savedMargin !== undefined) setMarginMinutes(savedMargin);
     };
     loadSettings();
   }, []);
@@ -138,9 +142,10 @@ export const EffortSubmissionModal: React.FC<EffortSubmissionModalProps> = ({
         }
       }
 
-      // Apply random margin (1-3 hours less)
-      const marginMinutes = Math.floor(Math.random() * 60) + 60; // 60-120 minutes
-      const fillMinutes = Math.max(availableMinutes - marginMinutes, 60); // At least 1 hour
+      // Apply margin from settings with randomness (+/- 50%)
+      const randomFactor = 0.5 + Math.random(); // 0.5 to 1.5
+      const totalMargin = Math.floor(marginMinutes * randomFactor);
+      const fillMinutes = Math.max(availableMinutes - totalMargin, 60); // At least 1 hour
 
       // Fetch Development Effort Time for each issue (optional cap)
       const effortCaps: Record<string, number | null> = {};
