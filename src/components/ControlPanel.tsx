@@ -48,7 +48,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
 			<div className="glass-card p-4 rounded-xl flex items-center gap-4 flex-wrap">
 				<div className="flex-1 min-w-300">
 					<label className="block text-xs font-medium text-secondary mb-1-5 uppercase tracking-wider">Target Directory</label>
-					<div className="flex items-center gap-2 bg-secondary/50 p-1.5 rounded-lg border border-color hover:border-accent/50 transition-colors" style={{ background: 'rgba(15, 23, 42, 0.3)' }}>
+					<div className="flex items-center gap-2 bg-secondary/50 p-1.5 rounded-lg border border-color hover:border-accent/50 transition-colors" style={{ background: 'var(--bg-tertiary)' }}>
 						<div className="p-2 bg-blue-500/10 rounded-md text-accent">
 							<FolderOpen size={18} />
 						</div>
@@ -58,7 +58,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
 							readOnly
 							placeholder="Select a directory containing your git repositories..."
 							className="flex-1 bg-transparent border-none p-0 text-sm focus:ring-0"
-							style={{ border: 'none', background: 'transparent', boxShadow: 'none' }}
+							style={{ border: 'none', background: 'transparent', boxShadow: 'none', color: 'var(--text-primary)' }}
 						/>
 						<button onClick={onBrowse} className="text-xs px-3 py-1.5 bg-tertiary hover:bg-white/10 rounded-md">
 							Browse
@@ -68,7 +68,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
 
 				<div className="min-w-200">
 					<label className="block text-xs font-medium text-secondary mb-1-5 uppercase tracking-wider">Time Range</label>
-					<div className="flex items-center gap-2 p-1.5 rounded-lg border border-color" style={{ background: 'rgba(15, 23, 42, 0.3)' }}>
+					<div className="flex items-center gap-2 p-1.5 rounded-lg border border-color" style={{ background: 'var(--bg-tertiary)' }}>
 						<div className="p-2 bg-blue-500/10 rounded-md text-accent">
 							<Calendar size={18} />
 						</div>
@@ -76,7 +76,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
 							value={timeFrame}
 							onChange={(e) => onTimeFrameChange(e.target.value as TimeFrame)}
 							className="flex-1 appearance-none bg-transparent border-none text-sm"
-							style={{ backgroundImage: 'none', border: 'none', boxShadow: 'none', padding: '0.25rem 1.5rem 0.25rem 0' }}
+							style={{ backgroundImage: 'none', border: 'none', boxShadow: 'none', padding: '0.25rem 1.5rem 0.25rem 0', color: 'var(--text-primary)' }}
 						>
 							<option value="8h">Last 8 Hours</option>
 							<option value="24h">Last 24 Hours</option>
@@ -97,7 +97,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
 								type="datetime-local"
 								value={customSince}
 								onChange={(e) => onCustomSinceChange(e.target.value)}
-								style={{ width: '100%' }}
+								style={{ width: '100%', color: 'var(--text-primary)' }}
 							/>
 						</div>
 						<div className="min-w-200 animate-in">
@@ -106,7 +106,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
 								type="datetime-local"
 								value={customUntil}
 								onChange={(e) => onCustomUntilChange(e.target.value)}
-								style={{ width: '100%' }}
+								style={{ width: '100%', color: 'var(--text-primary)' }}
 							/>
 						</div>
 					</>

@@ -10,10 +10,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange }) =
 	return (
 		<div className="w-64 glass flex flex-col border-r border-color h-full" style={{ borderRight: '1px solid var(--border-color)' }}>
 			<div className="p-6 flex items-center gap-3 border-b border-color" style={{ borderBottom: '1px solid var(--border-color)' }}>
-				<div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold shadow-lg" style={{ background: 'var(--accent-gradient)' }}>
-					GE
-				</div>
-				<span className="font-bold text-lg tracking-tight">Git Analyzer</span>
+				<span className="font-bold text-lg tracking-tight">Git Effort Analyzer</span>
 			</div>
 
 			<nav className="flex-1 p-4 flex flex-col gap-2">
@@ -53,8 +50,8 @@ const NavItem: React.FC<{ icon: React.ReactNode; label: string; active?: boolean
 	<button
 		onClick={onClick}
 		className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${active
-				? 'bg-blue-500/10 text-blue-400'
-				: 'hover:bg-white/5 text-secondary hover:text-primary'
+			? 'bg-blue-500/10 text-blue-400'
+			: 'hover:bg-white/5 text-secondary hover:text-primary'
 			}`}
 		style={{
 			background: active ? 'rgba(59, 130, 246, 0.1)' : 'transparent',

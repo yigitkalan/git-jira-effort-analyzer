@@ -5,7 +5,6 @@ import { promisify } from 'util';
 
 const execAsync = promisify(exec);
 const readdirAsync = promisify(fs.readdir);
-const statAsync = promisify(fs.stat);
 
 export interface Commit {
 	hash: string;

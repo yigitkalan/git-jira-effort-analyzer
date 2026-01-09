@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Commit } from '../types';
-import { GitCommit, GitBranch, Clock, FolderGit, User, Hash, ChevronDown, ChevronRight } from 'lucide-react';
+import { GitBranch, Clock, FolderGit, User, Hash, ChevronDown, ChevronRight } from 'lucide-react';
 
 interface RepoListProps {
 	commits: Commit[];
@@ -32,7 +32,7 @@ export const RepoList: React.FC<RepoListProps> = ({ commits }) => {
 	if (commits.length === 0) {
 		return (
 			<div className="flex-1 flex flex-col items-center justify-center text-secondary gap-6 opacity-60">
-				<div style={{ width: '6rem', height: '6rem', borderRadius: '9999px', background: 'rgba(148, 163, 184, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+				<div style={{ width: '6rem', height: '6rem', borderRadius: '9999px', background: 'var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
 					<FolderGit size={48} />
 				</div>
 				<div className="text-center">
@@ -59,36 +59,36 @@ export const RepoList: React.FC<RepoListProps> = ({ commits }) => {
 							<div
 								onClick={() => toggleRepo(repoName)}
 								style={{
-									background: 'rgba(255, 255, 255, 0.03)',
+									background: 'rgba(var(--text-primary-rgb, 255, 255, 255), 0.03)',
 									padding: '1rem 1.25rem',
-									borderBottom: isCollapsed ? 'none' : '1px solid rgba(148, 163, 184, 0.1)',
+									borderBottom: isCollapsed ? 'none' : '1px solid var(--border-color)',
 									display: 'flex',
 									justifyContent: 'space-between',
 									alignItems: 'center',
 									cursor: 'pointer',
 									transition: 'background 0.2s ease'
 								}}
-								onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)'}
-								onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)'}
+								onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(var(--text-primary-rgb, 255, 255, 255), 0.06)'}
+								onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(var(--text-primary-rgb, 255, 255, 255), 0.03)'}
 							>
 								<div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-									<div style={{ padding: '0.5rem', background: 'rgba(59, 130, 246, 0.15)', borderRadius: '0.5rem', color: '#60a5fa' }}>
+									<div style={{ padding: '0.5rem', background: 'rgba(59, 130, 246, 0.15)', borderRadius: '0.5rem', color: 'var(--accent-primary)' }}>
 										<FolderGit size={20} />
 									</div>
 									<div>
-										<h3 style={{ fontWeight: 700, fontSize: '1rem', margin: 0, color: '#f8fafc' }}>{repoName}</h3>
-										<span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '0.375rem', marginTop: '0.125rem' }}>
-											<span style={{ width: '0.5rem', height: '0.5rem', borderRadius: '9999px', background: '#10b981' }}></span>
+										<h3 style={{ fontWeight: 700, fontSize: '1rem', margin: 0, color: 'var(--text-primary)' }}>{repoName}</h3>
+										<span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.375rem', marginTop: '0.125rem' }}>
+											<span style={{ width: '0.5rem', height: '0.5rem', borderRadius: '9999px', background: 'var(--success)' }}></span>
 											{groupedCommits[repoName].length} commit{groupedCommits[repoName].length !== 1 ? 's' : ''}
 										</span>
 									</div>
 								</div>
 								<div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-									<div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: '#94a3b8', background: 'rgba(0, 0, 0, 0.2)', padding: '0.375rem 0.75rem', borderRadius: '0.375rem', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+									<div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--text-secondary)', background: 'rgba(0, 0, 0, 0.1)', padding: '0.375rem 0.75rem', borderRadius: '0.375rem', border: '1px solid var(--border-color)' }}>
 										<User size={12} />
 										{groupedCommits[repoName][0].author}
 									</div>
-									<div style={{ color: '#94a3b8' }}>
+									<div style={{ color: 'var(--text-secondary)' }}>
 										{isCollapsed ? <ChevronRight size={20} /> : <ChevronDown size={20} />}
 									</div>
 								</div>
@@ -102,13 +102,13 @@ export const RepoList: React.FC<RepoListProps> = ({ commits }) => {
 											key={commit.hash}
 											style={{
 												padding: '1rem 1.25rem',
-												borderTop: commitIndex > 0 ? '1px solid rgba(255, 255, 255, 0.03)' : 'none',
+												borderTop: commitIndex > 0 ? '1px solid var(--border-color)' : 'none',
 												display: 'flex',
 												gap: '1rem',
 												alignItems: 'flex-start',
 												transition: 'background 0.15s ease'
 											}}
-											onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.02)'}
+											onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(var(--text-primary-rgb, 255, 255, 255), 0.02)'}
 											onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
 										>
 											{/* Commit Hash with Icon */}
@@ -118,7 +118,7 @@ export const RepoList: React.FC<RepoListProps> = ({ commits }) => {
 												gap: '0.375rem',
 												fontFamily: 'monospace',
 												fontSize: '0.75rem',
-												color: '#60a5fa',
+												color: 'var(--accent-primary)',
 												minWidth: '90px',
 												paddingTop: '0.125rem'
 											}}>
@@ -132,7 +132,7 @@ export const RepoList: React.FC<RepoListProps> = ({ commits }) => {
 												<div style={{
 													fontWeight: 500,
 													fontSize: '0.875rem',
-													color: '#e2e8f0',
+													color: 'var(--text-primary)',
 													lineHeight: 1.5,
 													wordBreak: 'break-word'
 												}}>
@@ -146,11 +146,11 @@ export const RepoList: React.FC<RepoListProps> = ({ commits }) => {
 													gap: '1rem',
 													marginTop: '0.5rem',
 													fontSize: '0.75rem',
-													color: '#94a3b8'
+													color: 'var(--text-secondary)'
 												}}>
 													{/* Date */}
 													<span style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-														<Clock size={12} style={{ color: '#64748b' }} />
+														<Clock size={12} style={{ color: 'var(--text-muted)' }} />
 														{commit.date}
 													</span>
 
@@ -160,11 +160,11 @@ export const RepoList: React.FC<RepoListProps> = ({ commits }) => {
 															display: 'flex',
 															alignItems: 'center',
 															gap: '0.375rem',
-															color: '#fbbf24',
-															background: 'rgba(251, 191, 36, 0.1)',
+															color: 'var(--warning)',
+															background: 'rgba(245, 158, 11, 0.1)',
 															padding: '0.125rem 0.5rem',
 															borderRadius: '9999px',
-															border: '1px solid rgba(251, 191, 36, 0.2)'
+															border: '1px solid var(--border-color)'
 														}}>
 															<GitBranch size={10} />
 															{commit.refs}

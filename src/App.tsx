@@ -4,6 +4,8 @@ import { RepoList } from './components/RepoList';
 import { useGitScan } from './hooks/useGitScan';
 import { Sidebar } from './components/Sidebar';
 
+import { SettingsView } from './components/Settings';
+
 function App() {
 	const [currentView, setCurrentView] = useState('dashboard');
 
@@ -40,6 +42,10 @@ function App() {
 					<RepoList commits={commits} />
 				</>
 			);
+		}
+
+		if (currentView === 'settings') {
+			return <SettingsView />;
 		}
 
 		return (

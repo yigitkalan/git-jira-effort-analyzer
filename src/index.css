@@ -1,5 +1,5 @@
 :root {
-	/* Modern Dark Palette */
+	/* Modern Dark Palette (Default) */
 	--bg-primary: #0f172a;
 	--bg-secondary: #1e293b;
 	--bg-tertiary: #334155;
@@ -24,6 +24,8 @@
 	--shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
 	--shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
 
+	--body-bg: radial-gradient(circle at top right, #1e293b 0%, #0f172a 100%);
+
 	font-family: 'Inter', system-ui, -apple-system, sans-serif;
 	line-height: 1.5;
 	font-weight: 400;
@@ -31,6 +33,23 @@
 	color-scheme: dark;
 	color: var(--text-primary);
 	background-color: var(--bg-primary);
+}
+
+[data-theme='light'] {
+	--bg-primary: #f8f8f8;
+	--bg-secondary: #ffffff;
+	--bg-tertiary: #f1f5f9;
+	--bg-glass: rgba(255, 255, 255, 0.8);
+
+	--text-primary: #0f172a;
+	--text-secondary: #475569;
+	--text-muted: #64748b;
+
+	--border-color: rgba(0, 0, 0, 0.08);
+	--border-hover: rgba(0, 0, 0, 0.15);
+
+	--body-bg: radial-gradient(circle at top right, #f1f5f9 0%, #f8fafc 100%);
+	color-scheme: light;
 }
 
 * {
@@ -43,7 +62,9 @@ body {
 	flex-direction: column;
 	min-height: 100vh;
 	overflow-x: hidden;
-	background: radial-gradient(circle at top right, #1e293b 0%, #0f172a 100%);
+	background: var(--body-bg);
+	color: var(--text-primary);
+	background-color: var(--bg-primary);
 }
 
 #root {
@@ -186,14 +207,14 @@ body {
 }
 
 .glass-card {
-	background: rgba(30, 41, 59, 0.4);
+	background: var(--bg-secondary);
 	backdrop-filter: blur(8px);
 	border: 1px solid var(--border-color);
 	transition: all 0.3s ease;
 }
 
 .glass-card:hover {
-	background: rgba(30, 41, 59, 0.6);
+	background: var(--bg-tertiary);
 	border-color: var(--border-hover);
 	transform: translateY(-2px);
 	box-shadow: var(--shadow-lg);
@@ -257,7 +278,7 @@ button:disabled {
 
 input,
 select {
-	background-color: rgba(15, 23, 42, 0.5);
+	background-color: var(--bg-tertiary);
 	border: 1px solid var(--border-color);
 	color: var(--text-primary);
 	padding: 0.6em 1em;
@@ -479,7 +500,7 @@ select:focus {
 }
 
 .divide-y>*+* {
-	border-top: 1px solid rgba(255, 255, 255, 0.05);
+	border-top: 1px solid var(--border-color);
 }
 
 .custom-scrollbar::-webkit-scrollbar {
