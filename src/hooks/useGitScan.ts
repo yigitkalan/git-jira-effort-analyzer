@@ -67,10 +67,17 @@ export function useGitScan() {
       }
     }
 
+    // Get latest settings for issue detection
+    const issueDetectionMode = await (window as any).ipcRenderer.invoke('get-settings', 'issueDetectionMode');
+    const issuePatternsStr = await (window as any).ipcRenderer.invoke('get-settings', 'issuePatterns');
+    const issuePatterns = issuePatternsStr ? issuePatternsStr.split(',').map((p: string) => p.trim()) : undefined;
+
     const options: ScanOptions = {
       rootPath,
       since,
       until: timeFrame === 'custom' || timeFrame === 'yesterday' ? until : undefined,
+      issueDetectionMode,
+      issuePatterns,
     };
 
     try {

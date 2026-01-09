@@ -12,6 +12,8 @@ export interface ScanOptions {
   rootPath: string;
   since?: string;
   until?: string;
+  issueDetectionMode?: 'commit' | 'branch';
+  issuePatterns?: string[];
 }
 
 export type TimeFrame = '8h' | '24h' | '48h' | '1w' | 'yesterday' | 'custom';

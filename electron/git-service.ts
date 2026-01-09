@@ -20,18 +20,22 @@ export interface ScanOptions {
   rootPath: string;
   since?: string;
   until?: string;
+  issueDetectionMode?: 'commit' | 'branch';
+  issuePatterns?: string[];
 }
 
-// Default issue key patterns - can be extended via settings
-const ISSUE_KEY_PATTERN = /\b(IMP|SJR)-\d+/gi;
-
-function extractIssueKey(message: string): string | null {
-  const matches = message.match(ISSUE_KEY_PATTERN);
+function extractIssueKey(text: string, patterns: string[] = ['IMP', 'SJR']): string | null {
+  if (!patterns || patterns.length === 0) patterns = ['IMP', 'SJR'];
+  // Escape patterns to be safe in regex
+  const safePatterns = patterns.map(p => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  const patternString = `\\b(${safePatterns.join('|')})-\\d+`;
+  const regex = new RegExp(patternString, 'gi');
+  const matches = text.match(regex);
   return matches ? matches[0].toUpperCase() : null;
 }
 
 export async function scanRepos(options: ScanOptions): Promise<Commit[]> {
-  const { rootPath, since, until } = options;
+  const { rootPath, since, until, issueDetectionMode = 'commit', issuePatterns } = options;
   const results: Commit[] = [];
 
   try {
@@ -64,8 +68,34 @@ export async function scanRepos(options: ScanOptions): Promise<Commit[]> {
 
           if (logStdout.trim()) {
             const lines = logStdout.trim().split('\n');
-            lines.forEach((line) => {
+            
+            // Process lines sequentially to handle async branch detection
+            for (const line of lines) {
               const [hash, date, message, refs] = line.split('|');
+              let issueKey: string | null = null;
+
+              if (issueDetectionMode === 'branch') {
+                try {
+                  // Find the branch name that contains this commit
+                  // --refs="refs/heads/*" limits to local branches
+                  const { stdout: branchStdout } = await execAsync(
+                    `git -C "${repoPath}" name-rev --name-only --refs="refs/heads/*" ${hash}`
+                  );
+                  const branchName = branchStdout.trim();
+                  // Remove generation suffix (e.g. ~2) to get the base branch name
+                  const cleanBranchName = branchName.replace(/[~^]\d+$/, '');
+                  issueKey = extractIssueKey(cleanBranchName, issuePatterns);
+                } catch (e) {
+                  // Fallback or ignore if branch detection fails
+                  console.warn(`Failed to detect branch for commit ${hash}`, e);
+                }
+              }
+
+              // Fallback to commit message if branch detection didn't find anything or mode is 'commit'
+              if (!issueKey) {
+                issueKey = extractIssueKey(message, issuePatterns);
+              }
+
               results.push({
                 hash,
                 date,
@@ -73,9 +103,9 @@ export async function scanRepos(options: ScanOptions): Promise<Commit[]> {
                 refs: refs || '',
                 repoName: dir,
                 author: localAuthor,
-                issueKey: extractIssueKey(message),
+                issueKey,
               });
-            });
+            }
           }
         } catch (err) {
           console.error(`Error processing repo ${dir}:`, err);

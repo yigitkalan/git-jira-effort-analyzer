@@ -20,6 +20,7 @@ export const SettingsView: React.FC = () => {
   const [workStartTime, setWorkStartTime] = useState('09:00');
   const [workEndTime, setWorkEndTime] = useState('19:00');
   const [marginMinutes, setMarginMinutes] = useState(60);
+  const [issueDetectionMode, setIssueDetectionMode] = useState<'commit' | 'branch'>('commit');
 
   // Load settings on mount
   useEffect(() => {
@@ -62,6 +63,9 @@ export const SettingsView: React.FC = () => {
 
       const savedMargin = await (window as any).ipcRenderer.invoke('get-settings', 'marginMinutes');
       if (savedMargin !== undefined) setMarginMinutes(savedMargin);
+
+      const savedDetectionMode = await (window as any).ipcRenderer.invoke('get-settings', 'issueDetectionMode');
+      if (savedDetectionMode) setIssueDetectionMode(savedDetectionMode);
     };
     loadSettings();
   }, []);
@@ -105,6 +109,11 @@ export const SettingsView: React.FC = () => {
   const saveMarginMinutes = (value: number) => {
     setMarginMinutes(value);
     (window as any).ipcRenderer.invoke('save-settings', 'marginMinutes', value);
+  };
+
+  const saveIssueDetectionMode = (value: 'commit' | 'branch') => {
+    setIssueDetectionMode(value);
+    (window as any).ipcRenderer.invoke('save-settings', 'issueDetectionMode', value);
   };
 
   const addBreakTime = () => {
@@ -229,6 +238,47 @@ export const SettingsView: React.FC = () => {
           />
           <p className="text-xs text-muted mt-1">
             Prefixes for issue keys in commit messages (e.g., IMP-123)
+          </p>
+        </div>
+
+        <div>
+          <label className="block text-xs text-secondary mb-1">
+            Issue Detection Mode
+          </label>
+          <div className="flex gap-2">
+            <button
+              onClick={() => saveIssueDetectionMode('commit')}
+              className={`px-3 py-2 rounded text-sm border ${
+                issueDetectionMode === 'commit'
+                  ? 'bg-blue-500/10 border-blue-500 text-blue-500'
+                  : 'bg-secondary/10 border-transparent text-secondary hover:bg-secondary/20'
+              }`}
+              style={{
+                background: issueDetectionMode === 'commit' ? 'rgba(59, 130, 246, 0.1)' : 'var(--bg-tertiary)',
+                borderColor: issueDetectionMode === 'commit' ? 'var(--accent-primary)' : 'transparent',
+                color: issueDetectionMode === 'commit' ? 'var(--accent-primary)' : 'var(--text-secondary)',
+              }}
+            >
+              Commit Message
+            </button>
+            <button
+              onClick={() => saveIssueDetectionMode('branch')}
+              className={`px-3 py-2 rounded text-sm border ${
+                issueDetectionMode === 'branch'
+                  ? 'bg-blue-500/10 border-blue-500 text-blue-500'
+                  : 'bg-secondary/10 border-transparent text-secondary hover:bg-secondary/20'
+              }`}
+              style={{
+                background: issueDetectionMode === 'branch' ? 'rgba(59, 130, 246, 0.1)' : 'var(--bg-tertiary)',
+                borderColor: issueDetectionMode === 'branch' ? 'var(--accent-primary)' : 'transparent',
+                color: issueDetectionMode === 'branch' ? 'var(--accent-primary)' : 'var(--text-secondary)',
+              }}
+            >
+              Branch Name
+            </button>
+          </div>
+          <p className="text-xs text-muted mt-1">
+            Where to look for issue keys (e.g. in commit message "IMP-123: fix" or branch "feature/IMP-123")
           </p>
         </div>
       </div>
