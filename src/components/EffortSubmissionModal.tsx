@@ -9,6 +9,8 @@ import {
   ChevronUp,
   ChevronDown,
   Zap,
+  CheckCircle,
+  AlertTriangle,
 } from 'lucide-react';
 import { Commit } from '../types';
 import { format } from 'date-fns';
@@ -17,6 +19,7 @@ interface EffortSubmissionModalProps {
   commits: Commit[];
   onClose: () => void;
   onSubmit: (efforts: EffortEntry[], workDate: string, workStartTime: string) => Promise<void>;
+  onSuccess?: () => void;
 }
 
 export interface EffortEntry {
@@ -44,9 +47,12 @@ export const EffortSubmissionModal: React.FC<EffortSubmissionModalProps> = ({
   commits,
   onClose,
   onSubmit,
+  onSuccess,
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
   const [workDate, setWorkDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [workStartTime, setWorkStartTime] = useState('09:00');
   const [workEndTime, setWorkEndTime] = useState('19:00');
@@ -208,9 +214,11 @@ export const EffortSubmissionModal: React.FC<EffortSubmissionModalProps> = ({
       }));
 
       await onSubmit(efforts, workDate, workStartTime);
-      onClose();
+      setShowConfirmation(false);
+      setShowSuccess(true);
     } catch (err: any) {
       setError(err.message || 'Failed to submit efforts');
+      setShowConfirmation(false);
     } finally {
       setIsSubmitting(false);
     }
@@ -593,17 +601,109 @@ export const EffortSubmissionModal: React.FC<EffortSubmissionModalProps> = ({
               Cancel
             </button>
             <button
-              onClick={handleSubmit}
+              onClick={() => setShowConfirmation(true)}
               disabled={isSubmitting || issueOrder.length === 0}
               className="primary"
               style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
             >
               <Send size={16} />
-              {isSubmitting ? 'Submitting...' : 'Submit Efforts'}
+              Submit Efforts
             </button>
           </div>
         </div>
       </div>
+
+      {/* Confirmation Modal */}
+      {showConfirmation && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1001,
+          }}
+          onClick={() => setShowConfirmation(false)}
+        >
+          <div
+            className="glass-card rounded-xl"
+            style={{ padding: '1.5rem', maxWidth: '400px' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+              <AlertTriangle size={24} style={{ color: 'var(--warning)' }} />
+              <h3 style={{ fontWeight: 700, margin: 0 }}>Confirm Submission</h3>
+            </div>
+            <p className="text-secondary" style={{ marginBottom: '1rem', fontSize: '0.875rem' }}>
+              You are about to submit <strong>{issueOrder.length} worklog(s)</strong> for <strong>{workDate}</strong>:
+            </p>
+            <ul style={{ marginBottom: '1rem', fontSize: '0.875rem', paddingLeft: '1.25rem' }}>
+              {issueOrder.map((issueKey) => (
+                <li key={issueKey} style={{ marginBottom: '0.25rem' }}>
+                  <span style={{ color: 'var(--accent-primary)', fontWeight: 600 }}>{issueKey}</span>
+                  {' — '}{formatTime(effortTimes[issueKey])}
+                </li>
+              ))}
+            </ul>
+            <p className="text-muted" style={{ fontSize: '0.75rem', marginBottom: '1rem' }}>
+              Total: <strong>{formatTime(totalSeconds)}</strong>
+            </p>
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+              <button onClick={() => setShowConfirmation(false)} style={{ background: 'var(--bg-tertiary)' }}>
+                Cancel
+              </button>
+              <button
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+                className="primary"
+                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+              >
+                {isSubmitting ? 'Submitting...' : 'Yes, Submit'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Notification */}
+      {showSuccess && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1001,
+            cursor: 'pointer',
+          }}
+          onClick={() => {
+            onSuccess?.();
+            onClose();
+          }}
+        >
+          <div
+            className="glass-card rounded-xl animate-in"
+            style={{ padding: '2rem', textAlign: 'center' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <CheckCircle size={48} style={{ color: 'var(--success)', marginBottom: '1rem' }} />
+            <h3 style={{ fontWeight: 700, marginBottom: '0.5rem' }}>Success!</h3>
+            <p className="text-secondary" style={{ marginBottom: '1rem' }}>
+              {issueOrder.length} worklog(s) submitted successfully.
+            </p>
+            <button onClick={() => {
+              onSuccess?.();
+              onClose();
+            }} className="primary" style={{ padding: '0.5rem 1.5rem' }}>
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

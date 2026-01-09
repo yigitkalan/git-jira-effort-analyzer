@@ -135,7 +135,6 @@ export const RepoList: React.FC<RepoListProps> = ({ commits }) => {
         throw new Error(`Failed to submit ${effort.issueKey}: ${error.message}`);
       }
     }
-    clearSelection();
   };
 
   // Helper functions for time calculation
@@ -540,6 +539,7 @@ export const RepoList: React.FC<RepoListProps> = ({ commits }) => {
           commits={getSelectedCommitObjects()}
           onClose={() => setShowSubmitModal(false)}
           onSubmit={handleSubmitEfforts}
+          onSuccess={clearSelection}
         />
       )}
     </>
