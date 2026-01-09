@@ -94,14 +94,14 @@ export const TimeLogsView: React.FC = () => {
     const dayStart = startOfDay(startDate);
     const minutesFromStart = differenceInMinutes(startDate, dayStart);
     
-    const top = (minutesFromStart / 60) * HOUR_HEIGHT;
-    const height = (worklog.timeSpentSeconds / 3600) * HOUR_HEIGHT;
+    const top = (minutesFromStart / 60) * HOUR_HEIGHT + 2; // +2px gap from top
+    const height = (worklog.timeSpentSeconds / 3600) * HOUR_HEIGHT - 4; // -4px for top/bottom gaps
 
     return {
       top: `${top}px`,
-      height: `${Math.max(height, 20)}px`, // Minimum height for visibility
-      left: '4px',
-      right: '4px',
+      height: `${Math.max(height, 18)}px`, // Minimum height for visibility
+      left: '6px',
+      right: '6px',
     };
   };
 
@@ -249,10 +249,13 @@ export const TimeLogsView: React.FC = () => {
                       return (
                         <div
                           key={wl.id}
-                          className="absolute rounded border border-accent/30 overflow-hidden hover:z-20 transition-all hover:shadow-lg group cursor-pointer"
+                          className="absolute rounded-lg border border-accent/30 overflow-hidden hover:z-20 transition-all hover:shadow-lg group"
                           style={{
                             ...blockStyle,
+                            marginTop: '2px',
+                            marginBottom: '2px',
                             background: 'rgba(59, 130, 246, 0.2)',
+                            cursor: 'pointer',
                           }}
                           onClick={() => (window as any).ipcRenderer.invoke('open-external', `${jiraBaseUrl}/browse/${wl.issue.key}`)}
                           title={`${wl.issue.key}: ${wl.issue.summary}\n${formatTime(wl.timeSpentSeconds)}`}
