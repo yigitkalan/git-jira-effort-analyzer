@@ -8,6 +8,7 @@ import {
   GripVertical,
   ChevronUp,
   ChevronDown,
+  Zap,
 } from 'lucide-react';
 import { Commit } from '../types';
 import { format } from 'date-fns';
@@ -48,13 +49,22 @@ export const EffortSubmissionModal: React.FC<EffortSubmissionModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [workDate, setWorkDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [workStartTime, setWorkStartTime] = useState('09:00');
+  const [workEndTime, setWorkEndTime] = useState('19:00');
   const [breakTimes, setBreakTimes] = useState<BreakTime[]>([{ start: '12:00', end: '13:00' }]);
+  const [autoFillEnabled, setAutoFillEnabled] = useState(false);
+  const [isLoadingEffortTimes, setIsLoadingEffortTimes] = useState(false);
 
-  // Load break times from settings
+  // Load settings
   useEffect(() => {
     const loadSettings = async () => {
       const savedBreaks = await (window as any).ipcRenderer.invoke('get-settings', 'breakTimes');
       if (savedBreaks && savedBreaks.length > 0) setBreakTimes(savedBreaks);
+
+      const savedWorkStart = await (window as any).ipcRenderer.invoke('get-settings', 'workStartTime');
+      if (savedWorkStart) setWorkStartTime(savedWorkStart);
+
+      const savedWorkEnd = await (window as any).ipcRenderer.invoke('get-settings', 'workEndTime');
+      if (savedWorkEnd) setWorkEndTime(savedWorkEnd);
     };
     loadSettings();
   }, []);
@@ -100,6 +110,72 @@ export const EffortSubmissionModal: React.FC<EffortSubmissionModalProps> = ({
   });
 
   const hasNoIssues = 'NO_ISSUE' in issueGroups;
+
+  // Auto-fill calculation
+  const calculateAutoFill = async () => {
+    if (!autoFillEnabled || validIssueKeys.length === 0) return;
+
+    setIsLoadingEffortTimes(true);
+    try {
+      // Calculate available work minutes
+      const startMins = timeToMinutes(workStartTime);
+      const endMins = timeToMinutes(workEndTime);
+      let availableMinutes = endMins - startMins;
+
+      // Subtract break times
+      for (const breakTime of breakTimes) {
+        const breakStart = timeToMinutes(breakTime.start);
+        const breakEnd = timeToMinutes(breakTime.end);
+        // If break is within work hours
+        if (breakStart >= startMins && breakEnd <= endMins) {
+          availableMinutes -= (breakEnd - breakStart);
+        }
+      }
+
+      // Apply random margin (1-3 hours less)
+      const marginMinutes = Math.floor(Math.random() * 60) + 60; // 60-120 minutes
+      const fillMinutes = Math.max(availableMinutes - marginMinutes, 60); // At least 1 hour
+
+      // Fetch Development Effort Time for each issue (optional cap)
+      const effortCaps: Record<string, number | null> = {};
+      for (const issueKey of validIssueKeys) {
+        try {
+          const details = await (window as any).ipcRenderer.invoke('jira-get-issue-details', issueKey);
+          effortCaps[issueKey] = details.developmentEffortTime;
+        } catch {
+          effortCaps[issueKey] = null;
+        }
+      }
+
+      // Distribute time equally, capped by Development Effort Time if available
+      const perIssueMinutes = Math.floor(fillMinutes / validIssueKeys.length);
+      const newEffortTimes: Record<string, number> = {};
+
+      for (const issueKey of validIssueKeys) {
+        let allocatedSeconds = perIssueMinutes * 60;
+        const cap = effortCaps[issueKey];
+        if (cap !== null && cap > 0 && allocatedSeconds > cap) {
+          allocatedSeconds = cap;
+        }
+        // Ensure minimum 1 minute (Tempo API requirement)
+        allocatedSeconds = Math.max(allocatedSeconds, 60);
+        newEffortTimes[issueKey] = allocatedSeconds;
+      }
+
+      setEffortTimes(newEffortTimes);
+    } catch (error) {
+      console.error('Auto-fill calculation failed:', error);
+    } finally {
+      setIsLoadingEffortTimes(false);
+    }
+  };
+
+  // Trigger auto-fill when enabled or issue list changes
+  useEffect(() => {
+    if (autoFillEnabled) {
+      calculateAutoFill();
+    }
+  }, [autoFillEnabled, validIssueKeys.length]);
 
   const moveIssue = (issueKey: string, direction: 'up' | 'down') => {
     const currentIndex = issueOrder.indexOf(issueKey);
@@ -283,6 +359,42 @@ export const EffortSubmissionModal: React.FC<EffortSubmissionModalProps> = ({
           </div>
         </div>
 
+        {/* Auto-Fill Toggle */}
+        <div
+          style={{
+            padding: '0.75rem 1.25rem',
+            borderBottom: '1px solid var(--border-color)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+          }}
+        >
+          <button
+            onClick={() => setAutoFillEnabled(!autoFillEnabled)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              padding: '0.5rem 1rem',
+              borderRadius: '0.5rem',
+              background: autoFillEnabled ? 'rgba(59, 130, 246, 0.2)' : 'var(--bg-tertiary)',
+              color: autoFillEnabled ? 'var(--accent-primary)' : 'var(--text-secondary)',
+              border: autoFillEnabled ? '1px solid var(--accent-primary)' : '1px solid var(--border-color)',
+              cursor: 'pointer',
+              fontSize: '0.875rem',
+              fontWeight: 500,
+            }}
+          >
+            <Zap size={16} />
+            Auto-fill work hours
+          </button>
+          {autoFillEnabled && (
+            <span className="text-xs text-muted">
+              {isLoadingEffortTimes ? 'Calculating...' : `Filling ${formatTime(totalSeconds)} across ${validIssueKeys.length} issues`}
+            </span>
+          )}
+        </div>
+
         {/* Content */}
         <div
           style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}
@@ -391,8 +503,10 @@ export const EffortSubmissionModal: React.FC<EffortSubmissionModalProps> = ({
                 </div>
 
                 {/* Time Presets */}
-                <div style={{ marginBottom: '0.75rem' }}>
-                  <label className="block text-xs text-secondary mb-1">Time</label>
+                <div style={{ marginBottom: '0.75rem', opacity: autoFillEnabled ? 0.5 : 1, pointerEvents: autoFillEnabled ? 'none' : 'auto' }}>
+                  <label className="block text-xs text-secondary mb-1">
+                    Time {autoFillEnabled && <span className="text-muted">(auto-filled)</span>}
+                  </label>
                   <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                     {TIME_PRESETS.map((preset) => (
                       <button
@@ -400,6 +514,7 @@ export const EffortSubmissionModal: React.FC<EffortSubmissionModalProps> = ({
                         onClick={() =>
                           setEffortTimes((prev) => ({ ...prev, [issueKey]: preset.seconds }))
                         }
+                        disabled={autoFillEnabled}
                         style={{
                           padding: '0.375rem 0.625rem',
                           borderRadius: '0.375rem',
@@ -415,7 +530,7 @@ export const EffortSubmissionModal: React.FC<EffortSubmissionModalProps> = ({
                             effortTimes[issueKey] === preset.seconds
                               ? '1px solid var(--accent-primary)'
                               : '1px solid var(--border-color)',
-                          cursor: 'pointer',
+                          cursor: autoFillEnabled ? 'not-allowed' : 'pointer',
                           fontSize: '0.75rem',
                           fontWeight: 500,
                         }}

@@ -69,37 +69,68 @@ export const RepoList: React.FC<RepoListProps> = ({ commits }) => {
     // Sort efforts by order
     const sortedEfforts = [...efforts].sort((a, b) => a.order - b.order);
 
+    // Get user account ID once
+    const myself = await (window as any).ipcRenderer.invoke('jira-get-myself');
+    const authorAccountId = myself.accountId;
+
     // Calculate start times for each effort
     let currentMinutes = timeToMinutes(workStartTime);
 
     for (const effort of sortedEfforts) {
       try {
-        // Skip breaks
-        for (const breakTime of breakTimes) {
-          const breakStart = timeToMinutes(breakTime.start);
-          const breakEnd = timeToMinutes(breakTime.end);
-          if (currentMinutes >= breakStart && currentMinutes < breakEnd) {
-            currentMinutes = breakEnd;
-          }
-        }
-
-        const startTimeStr = minutesToTime(currentMinutes);
-
-        // 1. Resolve Issue Key to ID (Tempo requires numeric ID)
+        // Resolve Issue Key to ID (Tempo requires numeric ID)
         const issueId = await (window as any).ipcRenderer.invoke('jira-get-issue-id', effort.issueKey);
 
-        // 2. Submit worklog to Tempo
-        await (window as any).ipcRenderer.invoke('tempo-submit-worklog', {
-          issueId: parseInt(issueId, 10),
-          timeSpentSeconds: effort.timeSeconds,
-          startDate: workDate,
-          startTime: startTimeStr + ':00',
-          description: effort.description,
-          authorAccountId: await (window as any).ipcRenderer.invoke('jira-get-myself').then((u: any) => u.accountId)
-        });
+        // Calculate remaining minutes to log for this effort
+        let remainingMinutes = effort.timeSeconds / 60;
 
-        // Move current time forward
-        currentMinutes += effort.timeSeconds / 60;
+        while (remainingMinutes > 0) {
+          // Skip to end of break if current time is inside a break
+          for (const breakTime of breakTimes) {
+            const breakStart = timeToMinutes(breakTime.start);
+            const breakEnd = timeToMinutes(breakTime.end);
+            if (currentMinutes >= breakStart && currentMinutes < breakEnd) {
+              currentMinutes = breakEnd;
+            }
+          }
+
+          // Find the next break that might cut into our work
+          let nextBreakStart = Infinity;
+          for (const breakTime of breakTimes) {
+            const breakStart = timeToMinutes(breakTime.start);
+            if (breakStart > currentMinutes && breakStart < nextBreakStart) {
+              nextBreakStart = breakStart;
+            }
+          }
+
+          // Calculate how many minutes until next break (or all remaining)
+          const minutesUntilBreak = nextBreakStart - currentMinutes;
+          const minutesToLog = Math.min(remainingMinutes, minutesUntilBreak);
+
+          if (minutesToLog <= 0) break;
+
+          // Submit this chunk of work
+          const startTimeStr = minutesToTime(currentMinutes);
+          await (window as any).ipcRenderer.invoke('tempo-submit-worklog', {
+            issueId: parseInt(issueId, 10),
+            timeSpentSeconds: Math.round(minutesToLog * 60),
+            startDate: workDate,
+            startTime: startTimeStr + ':00',
+            description: effort.description,
+            authorAccountId,
+          });
+
+          // Advance time and reduce remaining
+          currentMinutes += minutesToLog;
+          remainingMinutes -= minutesToLog;
+        }
+
+        // Add random gap between issues (5-20 minutes) - except for the last effort
+        const isLastEffort = sortedEfforts.indexOf(effort) === sortedEfforts.length - 1;
+        if (!isLastEffort) {
+          const gapMinutes = Math.floor(Math.random() * 16) + 5; // 5-20 minutes
+          currentMinutes += gapMinutes;
+        }
       } catch (error: any) {
         throw new Error(`Failed to submit ${effort.issueKey}: ${error.message}`);
       }

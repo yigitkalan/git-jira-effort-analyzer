@@ -1,4 +1,3 @@
-import { is } from 'date-fns/locale';
 import Store from 'electron-store';
 
 
@@ -116,4 +115,44 @@ export async function getMyself(): Promise<{
   }
 
   return await response.json();
+}
+
+/**
+ * Fetches "Development Effort Time" (customfield_13397) value for an issue.
+ * Returns null if field is missing or not found (graceful handling).
+ */
+export async function getIssueDetails(issueKey: string): Promise<{ developmentEffortTime: number | null }> {
+  const { baseUrl } = getCredentials();
+
+  if (!baseUrl) {
+    throw new Error('Jira Base URL not configured');
+  }
+
+  try {
+    // Fetch the specific custom field for Development Effort Time
+    const response = await fetch(`${baseUrl}/rest/api/3/issue/${issueKey}?fields=customfield_13397`, {
+      headers: getHeaders(),
+    });
+
+    if (!response.ok) {
+      console.warn(`[JiraService] Failed to get issue details for ${issueKey}: ${response.status}`);
+      return { developmentEffortTime: null };
+    }
+
+    const data = await response.json();
+    const fields = data.fields || {};
+
+    // customfield_13397 is "Development Effort Time" - value is in HOURS
+    const effortTimeHours = fields.customfield_13397;
+
+    if (effortTimeHours !== null && effortTimeHours !== undefined && typeof effortTimeHours === 'number') {
+      // Convert hours to seconds
+      return { developmentEffortTime: effortTimeHours * 3600 };
+    }
+
+    return { developmentEffortTime: null };
+  } catch (error) {
+    console.error(`[JiraService] Error fetching issue details for ${issueKey}:`, error);
+    return { developmentEffortTime: null };
+  }
 }

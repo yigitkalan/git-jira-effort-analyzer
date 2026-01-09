@@ -1,12 +1,10 @@
 import { app, BrowserWindow, ipcMain, dialog, shell } from 'electron';
-import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import Store from 'electron-store';
 import { scanRepos, ScanOptions } from './git-service';
 import { getMyself } from './jira-service';
 
-const require = createRequire(import.meta.url);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // The built directory structure
@@ -87,7 +85,7 @@ app.whenReady().then(() => {
   });
 
   // IPC Handlers - Settings
-  ipcMain.handle('get-settings', (event, key) => {
+  ipcMain.handle('get-settings', (_event, key) => {
     return store.get(key);
   });
 
@@ -111,6 +109,10 @@ app.whenReady().then(() => {
     return await getIssueId(issueKey);
   });
 
+  ipcMain.handle('jira-get-issue-details', async (_event, issueKey: string) => {
+    const { getIssueDetails } = await import('./jira-service');
+    return await getIssueDetails(issueKey);
+  });
   // IPC Handlers - Tempo API
   ipcMain.handle('tempo-get-worklogs', async (_event, from: string, to: string) => {
     const { getWorklogs } = await import('./tempo-service');

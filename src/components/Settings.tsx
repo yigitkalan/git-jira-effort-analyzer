@@ -17,6 +17,8 @@ export const SettingsView: React.FC = () => {
   const [tempoApiToken, setTempoApiToken] = useState('');
   const [issuePatterns, setIssuePatterns] = useState('IMP,SJR');
   const [breakTimes, setBreakTimes] = useState<BreakTime[]>([{ start: '12:00', end: '13:00' }]);
+  const [workStartTime, setWorkStartTime] = useState('09:00');
+  const [workEndTime, setWorkEndTime] = useState('19:00');
 
   // Load settings on mount
   useEffect(() => {
@@ -50,6 +52,12 @@ export const SettingsView: React.FC = () => {
         'breakTimes'
       );
       if (savedBreakTimes) setBreakTimes(savedBreakTimes);
+
+      const savedWorkStart = await (window as any).ipcRenderer.invoke('get-settings', 'workStartTime');
+      if (savedWorkStart) setWorkStartTime(savedWorkStart);
+
+      const savedWorkEnd = await (window as any).ipcRenderer.invoke('get-settings', 'workEndTime');
+      if (savedWorkEnd) setWorkEndTime(savedWorkEnd);
     };
     loadSettings();
   }, []);
@@ -78,6 +86,16 @@ export const SettingsView: React.FC = () => {
   const saveIssuePatterns = (value: string) => {
     setIssuePatterns(value);
     (window as any).ipcRenderer.invoke('save-settings', 'issuePatterns', value);
+  };
+
+  const saveWorkStartTime = (value: string) => {
+    setWorkStartTime(value);
+    (window as any).ipcRenderer.invoke('save-settings', 'workStartTime', value);
+  };
+
+  const saveWorkEndTime = (value: string) => {
+    setWorkEndTime(value);
+    (window as any).ipcRenderer.invoke('save-settings', 'workEndTime', value);
   };
 
   const addBreakTime = () => {
@@ -203,6 +221,36 @@ export const SettingsView: React.FC = () => {
           <p className="text-xs text-muted mt-1">
             Prefixes for issue keys in commit messages (e.g., IMP-123)
           </p>
+        </div>
+      </div>
+
+      {/* Work Hours Section */}
+      <div className="glass-card p-6 rounded-xl flex flex-col gap-4">
+        <label className="block text-xs font-medium text-secondary uppercase tracking-wider">
+          Work Hours
+        </label>
+        <p className="text-xs text-muted">Define your work day for auto-fill calculations</p>
+        <div className="flex items-center gap-3">
+          <Clock size={16} style={{ color: 'var(--text-muted)' }} />
+          <div>
+            <label className="block text-xs text-secondary mb-1">Start</label>
+            <input
+              type="time"
+              value={workStartTime}
+              onChange={(e) => saveWorkStartTime(e.target.value)}
+              style={{ width: '120px' }}
+            />
+          </div>
+          <span className="text-secondary">to</span>
+          <div>
+            <label className="block text-xs text-secondary mb-1">End</label>
+            <input
+              type="time"
+              value={workEndTime}
+              onChange={(e) => saveWorkEndTime(e.target.value)}
+              style={{ width: '120px' }}
+            />
+          </div>
         </div>
       </div>
 

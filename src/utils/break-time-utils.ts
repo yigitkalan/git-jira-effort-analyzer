@@ -58,7 +58,7 @@ function timeToMinutes(time: string): number {
 export function distributeTimeAcrossIssues(
   totalSeconds: number,
   issueCount: number,
-  breakTimes?: BreakTime[]
+  _breakTimes?: BreakTime[] // Reserved for future break-aware distribution
 ): number[] {
   if (issueCount <= 0) return [];
 
