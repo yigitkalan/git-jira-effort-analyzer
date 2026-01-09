@@ -81,16 +81,22 @@ export async function getWorklogs(from: string, to: string): Promise<TempoWorklo
     console.error('Failed to filter by user:', error);
   }
 
+  // Filter out worklogs without issue details (e.g. internal overhead)
+  // We can't display them properly in the grid without an issue key
+  const validWorklogs = rawWorklogs.filter((wl: any) => wl.issue && wl.issue.id);
+  console.log(`[TempoService] Valid worklogs (with issue): ${validWorklogs.length}/${rawWorklogs.length}`);
+
   // Enrich with Issue Details (Key, Summary) from Jira
-  const issueIds = rawWorklogs.map((w: any) => w.issue.id);
+  const issueIds = validWorklogs.map((w: any) => w.issue.id);
   
   if (issueIds.length > 0) {
     try {
       const { getIssues } = await import('./jira-service');
       const issueMap = await getIssues(issueIds);
       
-      return rawWorklogs.map((wl: any) => ({
+      return validWorklogs.map((wl: any) => ({
         ...wl,
+        started: `${wl.startDate}T${wl.startTime}`, // Construct ISO-like string for frontend compatibility
         issue: {
           ...wl.issue,
           key: issueMap.get(String(wl.issue.id))?.key || 'UNKNOWN',
@@ -99,12 +105,24 @@ export async function getWorklogs(from: string, to: string): Promise<TempoWorklo
       }));
     } catch (error) {
       console.error('Failed to enrich worklogs with Jira issue details:', error);
-      // Fallback to raw worklogs if enrichment fails, but they will lack key/summary
-      return rawWorklogs;
+      // Fallback to validWorklogs if enrichment fails
+      return validWorklogs.map((wl: any) => ({
+        ...wl,
+        started: `${wl.startDate}T${wl.startTime}`, // Construct ISO-like string
+        issue: {
+          ...wl.issue,
+          key: 'UNKNOWN',
+          summary: 'Unknown Issue'
+        }
+      }));
     }
   }
 
-  return rawWorklogs;
+  // If no issues to enrich, still need to format 'started'
+  return validWorklogs.map((wl: any) => ({
+    ...wl,
+    started: `${wl.startDate}T${wl.startTime}`
+  }));
 }
 
 export async function submitWorklog(worklog: Worklog): Promise<TempoWorklogResponse> {
