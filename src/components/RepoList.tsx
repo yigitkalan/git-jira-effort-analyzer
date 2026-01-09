@@ -164,12 +164,22 @@ export const RepoList: React.FC<RepoListProps> = ({ commits }) => {
   }
 
   const selectedCount = selectedCommits.size;
+  const allSelected = selectedCount === commits.length && commits.length > 0;
+  const someSelected = selectedCount > 0 && selectedCount < commits.length;
+
+  const toggleSelectAll = () => {
+    if (allSelected) {
+      setSelectedCommits(new Set());
+    } else {
+      setSelectedCommits(new Set(commits.map(c => c.hash)));
+    }
+  };
 
   return (
     <>
       <div className="flex-1 overflow-auto px-6 pb-6">
-        {/* Selection Action Bar */}
-        {selectedCount > 0 && (
+        {/* Selection Action Bar - Always show if commits exist */}
+        {commits.length > 0 && (
           <div
             className="glass-card rounded-xl mb-4 animate-in"
             style={{
@@ -183,31 +193,56 @@ export const RepoList: React.FC<RepoListProps> = ({ commits }) => {
               zIndex: 10,
             }}
           >
-            <span className="text-sm">
-              <span className="font-bold text-accent">{selectedCount}</span> commit
-              {selectedCount !== 1 && 's'} selected
-            </span>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              {/* Select All Checkbox */}
               <button
-                onClick={clearSelection}
-                style={{ fontSize: '0.75rem', padding: '0.5rem 0.75rem' }}
-              >
-                Clear
-              </button>
-              <button
-                onClick={() => setShowSubmitModal(true)}
-                className="primary"
+                onClick={toggleSelectAll}
                 style={{
-                  fontSize: '0.75rem',
-                  padding: '0.5rem 0.75rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.375rem',
+                  padding: '0.25rem',
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: allSelected ? 'var(--accent-primary)' : someSelected ? 'var(--accent-primary)' : 'var(--text-muted)',
+                  transition: 'color 0.15s ease',
                 }}
               >
-                <Send size={14} />
-                Submit Efforts
+                {allSelected ? <CheckSquare size={18} /> : someSelected ? <CheckSquare size={18} style={{ opacity: 0.5 }} /> : <Square size={18} />}
               </button>
+              <span className="text-sm">
+                {selectedCount > 0 ? (
+                  <>
+                    <span className="font-bold text-accent">{selectedCount}</span> of {commits.length} selected
+                  </>
+                ) : (
+                  <span style={{ color: 'var(--text-secondary)' }}>Select commits to submit</span>
+                )}
+              </span>
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              {selectedCount > 0 && (
+                <>
+                  <button
+                    onClick={clearSelection}
+                    style={{ fontSize: '0.75rem', padding: '0.5rem 0.75rem' }}
+                  >
+                    Clear
+                  </button>
+                  <button
+                    onClick={() => setShowSubmitModal(true)}
+                    className="primary"
+                    style={{
+                      fontSize: '0.75rem',
+                      padding: '0.5rem 0.75rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.375rem',
+                    }}
+                  >
+                    <Send size={14} />
+                    Submit Efforts
+                  </button>
+                </>
+              )}
             </div>
           </div>
         )}
