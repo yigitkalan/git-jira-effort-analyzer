@@ -85,13 +85,17 @@ export const RepoList: React.FC<RepoListProps> = ({ commits }) => {
 
         const startTimeStr = minutesToTime(currentMinutes);
 
-        // Submit worklog to Jira (uses issue key directly)
-        await (window as any).ipcRenderer.invoke('jira-submit-worklog', {
-          issueKey: effort.issueKey,
+        // 1. Resolve Issue Key to ID (Tempo requires numeric ID)
+        const issueId = await (window as any).ipcRenderer.invoke('jira-get-issue-id', effort.issueKey);
+
+        // 2. Submit worklog to Tempo
+        await (window as any).ipcRenderer.invoke('tempo-submit-worklog', {
+          issueId: parseInt(issueId, 10),
           timeSpentSeconds: effort.timeSeconds,
           startDate: workDate,
           startTime: startTimeStr + ':00',
           description: effort.description,
+          authorAccountId: await (window as any).ipcRenderer.invoke('jira-get-myself').then((u: any) => u.accountId)
         });
 
         // Move current time forward

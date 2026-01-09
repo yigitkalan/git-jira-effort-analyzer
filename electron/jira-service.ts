@@ -1,26 +1,15 @@
+import { is } from 'date-fns/locale';
 import Store from 'electron-store';
 
-const store = new Store();
 
-interface JiraWorklogInput {
-  issueKey: string;
-  timeSpentSeconds: number;
-  startDate: string;
-  startTime: string;
-  description: string;
-}
 
-interface JiraWorklog {
-  id: string;
-  issueId: string;
-  timeSpentSeconds: number;
-  started: string;
-  comment?: { content: any[] };
-  author: { accountId: string; displayName: string };
-}
 
 function getCredentials(): { baseUrl: string; email: string; token: string } {
-  const baseUrl = (store.get('jiraBaseUrl') as string) || '';
+  const store = new Store();
+  let baseUrl = (store.get('jiraBaseUrl') as string) || '';
+  if (baseUrl.endsWith('/')) {
+    baseUrl = baseUrl.slice(0, -1);
+  }
   const email = (store.get('jiraEmail') as string) || '';
   const token = (store.get('jiraApiToken') as string) || '';
   return { baseUrl, email, token };
@@ -39,139 +28,70 @@ function getHeaders(): HeadersInit {
 
   // Jira Cloud uses Basic auth with email:token
   const authString = `${cleanEmail}:${cleanToken}`;
-  const auth = Buffer.from(authString).toString('base64');
-
-  // Debug log (masked)
-  console.log(`Constructing Auth Header for: ${cleanEmail}`);
-  console.log(`Token length: ${cleanToken.length}`);
-  console.log(`Auth string length: ${authString.length}`);
-  console.log(`Encoded auth length: ${auth.length}`);
+  const auth = Buffer.from(authString, 'utf-8').toString('base64');
 
   return {
-    Authorization: `Basic ${auth}`,
+    'Authorization': `Basic ${auth}`,
+    'Accept': 'application/json',
     'Content-Type': 'application/json',
-    Accept: 'application/json',
+    'X-Atlassian-Token': 'no-check'
   };
 }
 
-export async function submitWorklog(worklog: JiraWorklogInput): Promise<JiraWorklog> {
-  const { baseUrl } = getCredentials();
-
-  if (!baseUrl) {
-    throw new Error('Jira Base URL not configured. Please set it in Settings.');
-  }
-
-  // Format: 2024-01-09T09:00:00.000+0000
-  const started = `${worklog.startDate}T${worklog.startTime}.000+0000`;
-
-  const response = await fetch(`${baseUrl}/rest/api/3/issue/${worklog.issueKey}/worklog`, {
-    method: 'POST',
-    headers: getHeaders(),
-    body: JSON.stringify({
-      timeSpentSeconds: worklog.timeSpentSeconds,
-      started: started,
-      comment: {
-        type: 'doc',
-        version: 1,
-        content: [
-          {
-            type: 'paragraph',
-            content: [
-              {
-                type: 'text',
-                text: worklog.description || 'Work logged via Git Effort Analyzer',
-              },
-            ],
-          },
-        ],
-      },
-    }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('Jira API error:', errorText);
-    throw new Error(`Failed to submit worklog: ${response.status} - ${errorText}`);
-  }
-
-  return await response.json();
-}
-
-export async function getWorklogs(issueKey: string): Promise<JiraWorklog[]> {
+export async function getIssueId(issueKey: string): Promise<string> {
   const { baseUrl } = getCredentials();
 
   if (!baseUrl) {
     throw new Error('Jira Base URL not configured');
   }
 
-  const response = await fetch(`${baseUrl}/rest/api/3/issue/${issueKey}/worklog`, {
+  const response = await fetch(`${baseUrl}/rest/api/3/issue/${issueKey}?fields=id`, {
     headers: getHeaders(),
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to get worklogs: ${response.status}`);
+    throw new Error(`Failed to get issue ID for ${issueKey}: ${response.status}`);
   }
 
   const data = await response.json();
-  return data.worklogs || [];
+  return data.id;
 }
 
-export async function getMyWorklogs(from: string, to: string): Promise<any[]> {
+export async function getIssues(issueIds: string[]): Promise<Map<string, { key: string; summary: string }>> {
   const { baseUrl } = getCredentials();
 
   if (!baseUrl) {
     throw new Error('Jira Base URL not configured');
   }
 
-  // Get current user's account ID first to ensure JQL works correctly
-  const myself = await getMyself();
-  const accountId = myself.accountId;
-  console.log('Searching worklogs for accountId:', accountId);
+  const uniqueIds = [...new Set(issueIds)];
+  const issueMap = new Map<string, { key: string; summary: string }>();
 
-  // Use JQL to search for issues with worklogs in date range
-  const jql = `worklogDate >= "${from}" AND worklogDate <= "${to}" AND worklogAuthor = "${accountId}"`;
+  if (uniqueIds.length === 0) return issueMap;
 
-  const response = await fetch(`${baseUrl}/rest/api/3/search/jql`, {
+  // JQL: id in (1, 2, 3)
+  const jql = `id in (${uniqueIds.join(',')})`;
+
+  const searchResponse = await fetch(`${baseUrl}/rest/api/3/search/jql`, {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify({
       jql,
-      fields: ['key', 'summary', 'worklog'],
-    }),
+      fields: ['key', 'summary']
+    })
   });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Failed to search worklogs: ${response.status} - ${errorText}`);
-  }
-
-  const data = await response.json();
-  console.log('Full Jira Response:', JSON.stringify(data, null, 2));
-
-  // Extract worklogs from each issue
-  const worklogs: any[] = [];
-  for (const issue of data.issues || []) {
-    if (issue.fields?.worklog?.worklogs) {
-      console.log(
-        `Checking issue ${issue.key} with ${issue.fields.worklog.worklogs.length} worklogs`
-      );
-      for (const wl of issue.fields.worklog.worklogs) {
-        // Filter by date range and author manually to be safe
-        const wlDate = wl.started.split('T')[0];
-        if (wlDate >= from && wlDate <= to) {
-          worklogs.push({
-            ...wl,
-            issue: { key: issue.key, summary: issue.fields.summary },
-          });
-        }
-      }
-    } else {
-      console.log(`Issue ${issue.key} has no worklogs in search response`);
+  if (searchResponse.ok) {
+    const searchData = await searchResponse.json();
+    for (const issue of searchData.issues) {
+      issueMap.set(issue.id, { key: issue.key, summary: issue.fields.summary });
     }
+  } else {
+    console.error(`[JiraService] Search failed: ${searchResponse.status}`);
+    const text = await searchResponse.text();
+    console.error(`[JiraService] Error body: ${text}`);
   }
-
-  console.log('Final filtered worklogs:', worklogs.length);
-  return worklogs;
+  return issueMap;
 }
 
 export async function getMyself(): Promise<{
@@ -185,10 +105,14 @@ export async function getMyself(): Promise<{
     throw new Error('Jira Base URL not configured');
   }
 
-  const response = await fetch(`${baseUrl}/rest/api/3/myself`, { headers: getHeaders() });
+  const response = await fetch(`${baseUrl}/rest/api/2/myself`, { headers: getHeaders() });
 
   if (!response.ok) {
-    throw new Error(`Jira API error: ${response.status}`);
+    console.error(`Jira API Error: ${response.status} ${response.statusText}`);
+    console.error('Response Headers:', JSON.stringify(Object.fromEntries(response.headers.entries()), null, 2));
+    const errorText = await response.text();
+    console.error('Response Body:', errorText);
+    throw new Error(`Jira API error: ${response.status} - ${errorText}`);
   }
 
   return await response.json();

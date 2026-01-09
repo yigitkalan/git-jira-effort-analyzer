@@ -1,6 +1,6 @@
 import Store from 'electron-store';
 
-const store = new Store();
+
 
 interface Worklog {
   id?: number;
@@ -25,6 +25,7 @@ interface TempoWorklogResponse {
 const TEMPO_API_BASE = 'https://api.tempo.io/4';
 
 function getTempoToken(): string {
+  const store = new Store();
   return (store.get('tempoApiToken') as string) || '';
 }
 
@@ -41,17 +42,69 @@ export async function getWorklogs(from: string, to: string): Promise<TempoWorklo
     throw new Error('Tempo API token not configured. Please set it in Settings.');
   }
 
-  const response = await fetch(`${TEMPO_API_BASE}/worklogs?from=${from}&to=${to}`, {
-    headers: getHeaders(),
-  });
+  console.log(`[TempoService] Fetching worklogs from ${from} to ${to}`);
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Tempo API error: ${response.status} - ${errorText}`);
+  let allWorklogs: any[] = [];
+  let nextUrl = `${TEMPO_API_BASE}/worklogs?from=${from}&to=${to}&limit=1000`; // Maximize page size
+
+  while (nextUrl) {
+    console.log(`[TempoService] Fetching page: ${nextUrl}`);
+    const response = await fetch(nextUrl, {
+      headers: getHeaders(),
+    });
+
+    if (!response.ok) {
+      console.error(`Tempo API Error: ${response.status} ${response.statusText}`);
+      const errorText = await response.text();
+      console.error('Response Body:', errorText);
+      throw new Error(`Tempo API error: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    const results = data.results || [];
+    allWorklogs = [...allWorklogs, ...results];
+    
+    nextUrl = data.metadata?.next || null;
   }
 
-  const data = await response.json();
-  return data.results || [];
+  console.log(`[TempoService] Total worklogs fetched: ${allWorklogs.length}`);
+  let rawWorklogs = allWorklogs;
+
+  // Filter by current user
+  try {
+    const { getMyself } = await import('./jira-service');
+    const myself = await getMyself();
+    const myAccountId = myself.accountId;
+    
+    rawWorklogs = rawWorklogs.filter((wl: any) => wl.author.accountId === myAccountId);
+  } catch (error) {
+    console.error('Failed to filter by user:', error);
+  }
+
+  // Enrich with Issue Details (Key, Summary) from Jira
+  const issueIds = rawWorklogs.map((w: any) => w.issue.id);
+  
+  if (issueIds.length > 0) {
+    try {
+      const { getIssues } = await import('./jira-service');
+      const issueMap = await getIssues(issueIds);
+      
+      return rawWorklogs.map((wl: any) => ({
+        ...wl,
+        issue: {
+          ...wl.issue,
+          key: issueMap.get(String(wl.issue.id))?.key || 'UNKNOWN',
+          summary: issueMap.get(String(wl.issue.id))?.summary || 'Unknown Issue'
+        }
+      }));
+    } catch (error) {
+      console.error('Failed to enrich worklogs with Jira issue details:', error);
+      // Fallback to raw worklogs if enrichment fails, but they will lack key/summary
+      return rawWorklogs;
+    }
+  }
+
+  return rawWorklogs;
 }
 
 export async function submitWorklog(worklog: Worklog): Promise<TempoWorklogResponse> {

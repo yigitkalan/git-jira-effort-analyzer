@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import Store from 'electron-store';
 import { scanRepos, ScanOptions } from './git-service';
-import { submitWorklog, getMyWorklogs, getMyself } from './jira-service';
+import { getMyself } from './jira-service';
 
 const require = createRequire(import.meta.url);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -100,17 +100,26 @@ app.whenReady().then(() => {
     return await scanRepos(options);
   });
 
-  // IPC Handlers - Jira Worklog API
-  ipcMain.handle('jira-get-worklogs', async (_event, from: string, to: string) => {
-    return await getMyWorklogs(from, to);
-  });
 
-  ipcMain.handle('jira-submit-worklog', async (_event, worklog) => {
-    return await submitWorklog(worklog);
-  });
 
   ipcMain.handle('jira-get-myself', async () => {
     return await getMyself();
+  });
+
+  ipcMain.handle('jira-get-issue-id', async (_event, issueKey: string) => {
+    const { getIssueId } = await import('./jira-service');
+    return await getIssueId(issueKey);
+  });
+
+  // IPC Handlers - Tempo API
+  ipcMain.handle('tempo-get-worklogs', async (_event, from: string, to: string) => {
+    const { getWorklogs } = await import('./tempo-service');
+    return await getWorklogs(from, to);
+  });
+
+  ipcMain.handle('tempo-submit-worklog', async (_event, worklog) => {
+    const { submitWorklog } = await import('./tempo-service');
+    return await submitWorklog(worklog);
   });
 
   // IPC Handler - Open External URL

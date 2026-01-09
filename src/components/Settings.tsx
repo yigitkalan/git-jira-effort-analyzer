@@ -14,6 +14,7 @@ export const SettingsView: React.FC = () => {
   const [jiraBaseUrl, setJiraBaseUrl] = useState('');
   const [jiraEmail, setJiraEmail] = useState('');
   const [jiraApiToken, setJiraApiToken] = useState('');
+  const [tempoApiToken, setTempoApiToken] = useState('');
   const [issuePatterns, setIssuePatterns] = useState('IMP,SJR');
   const [breakTimes, setBreakTimes] = useState<BreakTime[]>([{ start: '12:00', end: '13:00' }]);
 
@@ -31,6 +32,12 @@ export const SettingsView: React.FC = () => {
         'jiraApiToken'
       );
       if (savedJiraToken) setJiraApiToken(savedJiraToken);
+
+      const savedTempoToken = await (window as any).ipcRenderer.invoke(
+        'get-settings',
+        'tempoApiToken'
+      );
+      if (savedTempoToken) setTempoApiToken(savedTempoToken);
 
       const savedPatterns = await (window as any).ipcRenderer.invoke(
         'get-settings',
@@ -61,6 +68,11 @@ export const SettingsView: React.FC = () => {
   const saveJiraApiToken = (value: string) => {
     setJiraApiToken(value);
     (window as any).ipcRenderer.invoke('save-settings', 'jiraApiToken', value);
+  };
+
+  const saveTempoApiToken = (value: string) => {
+    setTempoApiToken(value);
+    (window as any).ipcRenderer.invoke('save-settings', 'tempoApiToken', value);
   };
 
   const saveIssuePatterns = (value: string) => {
@@ -160,6 +172,20 @@ export const SettingsView: React.FC = () => {
           />
           <p className="text-xs text-muted mt-1">
             Generate from id.atlassian.com {'>'} Security {'>'} API tokens
+          </p>
+        </div>
+
+        <div>
+          <label className="block text-xs text-secondary mb-1">Tempo API Token</label>
+          <input
+            type="password"
+            value={tempoApiToken}
+            onChange={(e) => saveTempoApiToken(e.target.value)}
+            placeholder="Enter your Tempo API token"
+            style={{ width: '100%' }}
+          />
+          <p className="text-xs text-muted mt-1">
+            Generate from Jira {'>'} Tempo {'>'} Settings {'>'} API Integration
           </p>
         </div>
 

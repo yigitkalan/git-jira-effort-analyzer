@@ -7,6 +7,7 @@ interface Worklog {
   issue: { key: string; summary?: string };
   timeSpentSeconds: number;
   started: string;
+  description?: string;
   comment?: { content: any[] };
   author: { accountId: string; displayName: string };
 }
@@ -50,7 +51,9 @@ export const TimeLogsView: React.FC = () => {
     setError(null);
     try {
       const { from, to } = getDateRanges();
-      const result = await (window as any).ipcRenderer.invoke('jira-get-worklogs', from, to);
+      // Use Tempo API if token is available, otherwise fallback to Jira (but for now we assume Tempo)
+      // The user has a Tempo token configured.
+      const result = await (window as any).ipcRenderer.invoke('tempo-get-worklogs', from, to);
       setWorklogs(result || []);
     } catch (err: any) {
       setError(err.message || 'Failed to fetch worklogs');
@@ -267,7 +270,7 @@ export const TimeLogsView: React.FC = () => {
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() =>
-                              window.open(`${jiraBaseUrl}/browse/${worklog.issue.key}`, '_blank')
+                              (window as any).ipcRenderer.invoke('open-external', `${jiraBaseUrl}/browse/${worklog.issue.key}`)
                             }
                             style={{
                               display: 'flex',
@@ -288,6 +291,11 @@ export const TimeLogsView: React.FC = () => {
                         {worklog.issue.summary && (
                           <p className="text-sm text-secondary" style={{ marginTop: '0.25rem' }}>
                             {worklog.issue.summary}
+                          </p>
+                        )}
+                        {worklog.description && (
+                          <p className="text-xs text-muted" style={{ marginTop: '0.25rem', fontStyle: 'italic' }}>
+                            {worklog.description}
                           </p>
                         )}
                       </div>
